@@ -80,9 +80,9 @@ const OrdersComponent = ({ orders }: { orders: MY_ORDERS_QUERYResult }) => {
                   </TableCell>
 
                   <TableCell className="hidden sm:table-cell">
-                    {order?.invoice && (
+                    {(order as any)?.invoice && (
                       <p className="font-medium line-clamp-1">
-                        {order?.invoice ? order?.invoice?.number : "----"}
+                        {(order as any)?.invoice ? (order as any)?.invoice?.number : "----"}
                       </p>
                     )}
                   </TableCell>

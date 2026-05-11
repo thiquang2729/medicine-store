@@ -2,12 +2,21 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { urlFor } from "@/sanity/lib/image";
-import { Banner } from "@/sanity.types";
 import { AnimatePresence, motion } from "motion/react";
 
+interface PopupBanner {
+  id: string;
+  _id?: string;
+  title: string | null;
+  imageUrl: string | null;
+  alt: string | null;
+  description: any;
+  popupFrequency: string | null;
+  image?: { asset?: { _ref?: string }; alt?: string | null };
+}
+
 interface PromotionPopupProps {
-  banner: Banner | null;
+  banner: PopupBanner | null;
 }
 
 const PromotionPopup = ({ banner }: PromotionPopupProps) => {
@@ -17,7 +26,7 @@ const PromotionPopup = ({ banner }: PromotionPopupProps) => {
   // Kiểm tra có nên hiển thị popup không dựa trên tần suất
   const shouldShowPopup = (frequency: string = 'daily') => {
     const now = new Date().getTime();
-    const storageKey = `popup_${banner?._id}_${frequency}`;
+    const storageKey = `popup_${banner?._id || banner?.id}_${frequency}`;
     const lastShown = localStorage.getItem(storageKey);
 
     if (!lastShown) {
@@ -44,7 +53,7 @@ const PromotionPopup = ({ banner }: PromotionPopupProps) => {
   // Lưu thời gian hiển thị popup
   const markPopupShown = (frequency: string = 'daily') => {
     const now = new Date().getTime();
-    const storageKey = `popup_${banner?._id}_${frequency}`;
+    const storageKey = `popup_${banner?._id || banner?.id}_${frequency}`;
     localStorage.setItem(storageKey, now.toString());
   };
 
@@ -61,7 +70,7 @@ const PromotionPopup = ({ banner }: PromotionPopupProps) => {
   }, []);
 
   useEffect(() => {
-    if (!mounted || !banner || !banner.image?.asset?._ref) {
+    if (!mounted || !banner || !banner.imageUrl) {
       return;
     }
 
@@ -78,7 +87,7 @@ const PromotionPopup = ({ banner }: PromotionPopupProps) => {
   }, [mounted, banner]);
 
   // Không render gì nếu chưa mount (để tránh hydration error)
-  if (!mounted || !banner || !banner.image?.asset?._ref) {
+  if (!mounted || !banner || !banner.imageUrl) {
     return null;
   }
 
@@ -128,8 +137,8 @@ const PromotionPopup = ({ banner }: PromotionPopupProps) => {
             {/* Banner image */}
             <div className="w-full">
               <Image
-                src={urlFor(banner.image).url()}
-                alt={banner.image.alt || banner.title || 'Popup khuyến mãi'}
+                src={banner.imageUrl!}
+                alt={banner.alt || banner.title || 'Popup khuyến mãi'}
                 width={600}
                 height={400}
                 className="w-full h-auto object-cover"

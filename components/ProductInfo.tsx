@@ -1,176 +1,99 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 
-// Định nghĩa các interface cho dữ liệu info
-export interface PortableTextSpan {
-  _key: string;
-  _type: "span";
-  text: string;
-  marks: string[];
-}
-
-export interface PortableTextMarkDef {
-  _key: string;
-  _type: string; // "link" hoặc khác
-  href?: string;
-}
-
-export interface PortableTextBlock {
-  _key: string;
-  _type: "block";
-  style: string;
-  children: PortableTextSpan[];
-  markDefs: PortableTextMarkDef[];
-  listItem?: string;
-  level?: number;
-}
-
-export interface IngredientRow {
-  _key: string;
-  _type: "ingredientRow";
+// ========= Kiểu dữ liệu từ Prisma =========
+interface DrugIngredient {
+  id: string;
   ingredientName: string;
-  amount: string;
+  amount: string | null;
+  sortOrder: number | null;
 }
 
-export interface CompositionSection {
-  subtitle: string;
-  ingredientsTable: IngredientRow[];
+interface DrugInfoSection {
+  id: string;
+  sectionType: string;
+  subtitle: string | null;
+  content: string | null;
 }
 
-export interface OverdoseOrMissed {
-  subtitle: string;
-  content: PortableTextBlock[];
-}
-
-export interface OverdoseAndMissedDose {
-  overdose: OverdoseOrMissed;
-  missedDose: OverdoseOrMissed;
-}
-
-export interface SideEffects {
-  title?: string;
-  content: PortableTextBlock[];
-}
-
-export interface Storage {
-  title?: string;
-  content: PortableTextBlock[];
-}
-
-export interface UsageInstructions {
-  title?: string;
-  howToUse: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  dosage: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-}
-
-export interface UsageSection {
-  title?: string;
-  indications: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  pharmacodynamics: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  pharmacokinetics: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-}
-
-export interface WarningsAndPrecautions {
-  mainNoteTitle?: string;
-  introText?: PortableTextBlock[];
-  contraindications: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  precautions: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  drivingAndOperatingMachinery: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  pregnancy: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  breastfeeding: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-  drugInteractions: {
-    subtitle: string;
-    content: PortableTextBlock[];
-  };
-}
-
-export interface ProductDrugInfo {
+interface DrugInfoData {
+  id: string;
   drugName: string;
-  compositionSection: CompositionSection;
-  usageSection: UsageSection;
-  usageInstructions: UsageInstructions;
-  overdoseAndMissedDose: OverdoseAndMissedDose;
-  sideEffects: SideEffects;
-  storage: Storage;
-  warningsAndPrecautions: WarningsAndPrecautions;
+  compositionSubtitle: string | null;
+  usageSectionTitle: string | null;
+  usageInstructionsTitle: string | null;
+  sideEffectsTitle: string | null;
+  warningsMainNoteTitle: string | null;
+  warningsIntroText: string | null;
+  storageTitle: string | null;
+  ingredients: DrugIngredient[];
+  sections: DrugInfoSection[];
 }
 
-// Hàm render Portable Text đơn giản (chỉ hỗ trợ text, strong, em, link)
-function renderPortableText(blocks: PortableTextBlock[] = []) {
-  if (!blocks) return null;
-  return blocks.map((block, idx) => {
-    if (block._type !== "block") return null;
-    return (
-      <div key={block._key || idx} style={{ marginBottom: 8 }}>
-        {block.children.map((span, i) => {
-          let text: React.ReactNode = span.text;
-          if (span.marks?.length) {
-            span.marks.forEach((mark: string) => {
-              if (mark === "strong") text = <strong key={i}>{text}</strong>;
-              if (mark === "em") text = <em key={i}>{text}</em>;
-            });
-          }
-          // Xử lý link
-          const markDef = block.markDefs?.find((def) => def._key === span.marks?.[0]);
-          if (markDef && markDef._type === "link") {
-            text = (
-              <a key={i} href={markDef.href} target="_blank" rel="noopener noreferrer" style={{ color: "#1976d2" }}>
-                {text}
-              </a>
-            );
-          }
-          return text;
-        })}
-      </div>
-    );
-  });
-}
-
-const TABS = [
-  { key: "compositionSection", label: "Thành phần" },
-  { key: "usageSection", label: "Công dụng" },
-  { key: "usageInstructions", label: "Cách dùng" },
-  { key: "sideEffects", label: "Tác dụng phụ" },
-  { key: "warningsAndPrecautions", label: "Lưu ý" },
-  { key: "storage", label: "Bảo quản" },
+// Nhóm section theo tab
+const SECTION_GROUPS: { key: string; label: string; sectionTypes: string[] }[] = [
+  {
+    key: "compositionSection",
+    label: "Thành phần",
+    sectionTypes: [],
+  },
+  {
+    key: "usageSection",
+    label: "Công dụng",
+    sectionTypes: ["indications", "pharmacodynamics", "pharmacokinetics"],
+  },
+  {
+    key: "usageInstructions",
+    label: "Cách dùng",
+    sectionTypes: ["how_to_use", "dosage", "overdose", "missed_dose"],
+  },
+  {
+    key: "sideEffects",
+    label: "Tác dụng phụ",
+    sectionTypes: ["side_effects"],
+  },
+  {
+    key: "warningsAndPrecautions",
+    label: "Lưu ý",
+    sectionTypes: [
+      "contraindications",
+      "precautions",
+      "driving_and_machinery",
+      "pregnancy",
+      "breastfeeding",
+      "drug_interactions",
+    ],
+  },
+  {
+    key: "storage",
+    label: "Bảo quản",
+    sectionTypes: ["storage"],
+  },
 ];
 
+const SECTION_TYPE_LABELS: Record<string, string> = {
+  indications: "Chỉ định",
+  pharmacodynamics: "Dược lực học",
+  pharmacokinetics: "Dược động học",
+  how_to_use: "Cách dùng",
+  dosage: "Liều dùng",
+  overdose: "Làm gì khi dùng quá liều?",
+  missed_dose: "Làm gì khi quên 1 liều?",
+  side_effects: "Tác dụng phụ",
+  contraindications: "Chống chỉ định",
+  precautions: "Thận trọng",
+  driving_and_machinery: "Lái xe và vận hành máy móc",
+  pregnancy: "Phụ nữ mang thai",
+  breastfeeding: "Phụ nữ cho con bú",
+  drug_interactions: "Tương tác thuốc",
+  storage: "Bảo quản",
+};
+
 interface Props {
-  info: ProductDrugInfo;
+  info: DrugInfoData | null;
 }
 
 const ProductInfo = ({ info }: Props) => {
-  // Tạo ref cho từng section
   const sectionRefs = {
     compositionSection: useRef<HTMLDivElement>(null),
     usageSection: useRef<HTMLDivElement>(null),
@@ -180,39 +103,45 @@ const ProductInfo = ({ info }: Props) => {
     storage: useRef<HTMLDivElement>(null),
   };
 
-  // State cho tab đang active
   const [activeTab, setActiveTab] = useState<string>("compositionSection");
-
-  // State cho xem thêm/thu gọn
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      // Lấy vị trí từng section
-      const offsets = TABS.map((t) => {
+      const offsets = SECTION_GROUPS.map((t) => {
         const ref = sectionRefs[t.key as keyof typeof sectionRefs];
         if (!ref.current) return { key: t.key, offset: Infinity };
-        // Lấy khoảng cách từ top viewport đến section
         const rect = ref.current.getBoundingClientRect();
-        return { key: t.key, offset: Math.abs(rect.top - 80) }; // 80 là offset cho sticky header nếu có
+        return { key: t.key, offset: Math.abs(rect.top - 80) };
       });
-      // Tìm section gần nhất phía trên
-      const min = offsets.reduce((prev, curr) => (curr.offset < prev.offset ? curr : prev), offsets[0]);
+      const min = offsets.reduce(
+        (prev, curr) => (curr.offset < prev.offset ? curr : prev),
+        offsets[0]
+      );
       setActiveTab(min.key);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    // Gọi lần đầu để set đúng tab khi load
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   if (!info) return null;
 
-  // Hàm scroll tới section
+  // Kiểm tra có dữ liệu thực sự không
+  const hasIngredients = info.ingredients && info.ingredients.length > 0;
+  const hasSections = info.sections && info.sections.length > 0;
+  const hasAnyData = hasIngredients || hasSections || info.drugName;
+
   const scrollToSection = (key: keyof typeof sectionRefs) => {
     setActiveTab(key);
     sectionRefs[key]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Lấy sections theo sectionType
+  const getSectionsByTypes = (types: string[]): DrugInfoSection[] => {
+    if (!hasSections) return [];
+    return info.sections.filter((s) => types.includes(s.sectionType));
   };
 
   return (
@@ -220,11 +149,13 @@ const ProductInfo = ({ info }: Props) => {
       {/* Sidebar chỉ mục */}
       <div className="w-48 flex-shrink-0 sticky top-4 h-fit hidden md:block">
         <ul className="flex flex-col gap-2">
-          {TABS.map((t) => (
+          {SECTION_GROUPS.map((t) => (
             <li
               key={t.key}
-              className={`cursor-pointer px-4 py-2 rounded font-medium text-xl text-gray-500 transition border-b-2 border-[#edf0f2]  ${
-                activeTab === t.key ? "bg-[#edf0f2] font-bold text-blue-700 rounded-md text-gray-900" : "hover:bg-gray-100 hover:text-gray-900 rounded-md"
+              className={`cursor-pointer px-4 py-2 rounded font-medium text-xl text-gray-500 transition border-b-2 border-[#edf0f2] ${
+                activeTab === t.key
+                  ? "bg-[#edf0f2] font-bold text-blue-700 rounded-md text-gray-900"
+                  : "hover:bg-gray-100 hover:text-gray-900 rounded-md"
               }`}
               onClick={() => scrollToSection(t.key as keyof typeof sectionRefs)}
             >
@@ -233,9 +164,9 @@ const ProductInfo = ({ info }: Props) => {
           ))}
         </ul>
       </div>
-      {/* Nội dung tất cả section */}
+
+      {/* Nội dung */}
       <div className="flex-1 pl-8 relative">
-        {/* Bọc toàn bộ nội dung trong 1 div để xử lý xem thêm/thu gọn */}
         <div
           style={
             expanded
@@ -248,89 +179,153 @@ const ProductInfo = ({ info }: Props) => {
                 }
           }
         >
-          {/* Thành phần */}
+          {/* ===== Thành phần ===== */}
           <div ref={sectionRefs.compositionSection} id="compositionSection" className="mb-8 scroll-mt-24">
             <h2 className="font-bold text-xl mb-4">{info.drugName}</h2>
-            <div className="text-gray-600/80 mb-4 font-semibold">{info.compositionSection?.subtitle}</div>
-            <table className="lg:w-2/3 w-full mb-4 overflow-hidden rounded-md">
-              <thead>
-                <tr className="bg-gray-300 overflow-hidden rounded-full border-b-2 border-white">
-                  <th className="p-2 pl-4 text-left">Thông tin thành phần</th>
-                  <th className="p-2 pr-4 text-right border-l-2 border-white">Hàm lượng</th>
-                </tr>
-              </thead>
-              <tbody>
-                {info.compositionSection?.ingredientsTable?.map((row: IngredientRow) => (
-                  <tr key={row._key} className="border-b-2 border-white bg-[#edf0f2]">
-                    <td className="p-2 pl-4">{row.ingredientName}</td>
-                    <td className="p-2 pr-4 text-right border-l-2 border-white">{row.amount}</td>
+            {info.compositionSubtitle && (
+              <div className="text-gray-600/80 mb-4 font-semibold">{info.compositionSubtitle}</div>
+            )}
+            {hasIngredients ? (
+              <table className="lg:w-2/3 w-full mb-4 overflow-hidden rounded-md">
+                <thead>
+                  <tr className="bg-gray-300 overflow-hidden rounded-full border-b-2 border-white">
+                    <th className="p-2 pl-4 text-left">Thông tin thành phần</th>
+                    <th className="p-2 pr-4 text-right border-l-2 border-white">Hàm lượng</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {info.ingredients.map((ing) => (
+                    <tr key={ing.id} className="border-b-2 border-white bg-[#edf0f2]">
+                      <td className="p-2 pl-4">{ing.ingredientName}</td>
+                      <td className="p-2 pr-4 text-right border-l-2 border-white">{ing.amount || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-400 italic text-sm">Chưa có thông tin thành phần.</p>
+            )}
           </div>
-          {/* Công dụng */}
+
+          {/* ===== Công dụng ===== */}
           <div ref={sectionRefs.usageSection} id="usageSection" className="mb-8 scroll-mt-24">
-            <h2 className="font-bold text-xl mb-4">{info.usageSection?.title}</h2>
-            <h3 className="font-semibold mt-2 mb-3">{info.usageSection?.indications?.subtitle}</h3>
-            {renderPortableText(info.usageSection?.indications?.content)}
-            <h3 className="font-semibold mt-5 mb-3">{info.usageSection?.pharmacodynamics?.subtitle}</h3>
-            {renderPortableText(info.usageSection?.pharmacodynamics?.content)}
-            <h3 className="font-semibold mt-5 mb-3">{info.usageSection?.pharmacokinetics?.subtitle}</h3>
-            {renderPortableText(info.usageSection?.pharmacokinetics?.content)}
+            <h2 className="font-bold text-xl mb-4">{info.usageSectionTitle || "Công dụng"}</h2>
+            {getSectionsByTypes(["indications", "pharmacodynamics", "pharmacokinetics"]).length > 0 ? (
+              getSectionsByTypes(["indications", "pharmacodynamics", "pharmacokinetics"]).map((sec) => (
+                <div key={sec.id} className="mb-4">
+                  <h3 className="font-semibold mt-2 mb-2">
+                    {sec.subtitle || SECTION_TYPE_LABELS[sec.sectionType]}
+                  </h3>
+                  <div
+                    className="text-gray-700 drug-info-content"
+                    dangerouslySetInnerHTML={{ __html: sec.content || '' }}
+                  />
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400 italic text-sm">Chưa có thông tin công dụng.</p>
+            )}
           </div>
-          {/* Cách dùng */}
+
+          {/* ===== Cách dùng ===== */}
           <div ref={sectionRefs.usageInstructions} id="usageInstructions" className="mb-8 scroll-mt-24">
-            <h2 className="font-bold text-xl mb-4">{info.usageInstructions?.title}</h2>
-            <h3 className="font-semibold mt-2 mb-3">{info.usageInstructions?.howToUse?.subtitle}</h3>
-            {renderPortableText(info.usageInstructions?.howToUse?.content)}
-            <h3 className="font-semibold mt-5 mb-3">{info.usageInstructions?.dosage?.subtitle}</h3>
-            {renderPortableText(info.usageInstructions?.dosage?.content)}
-            <h3 className="font-semibold mt-5 mb-3">Làm gì khi dùng quá liều?</h3>
-            {renderPortableText(info.overdoseAndMissedDose?.overdose?.content)}
-            <h3 className="font-semibold mt-5 mb-3">Làm gì khi quên 1 liều?</h3>
-            {renderPortableText(info.overdoseAndMissedDose?.missedDose?.content)}
+            <h2 className="font-bold text-xl mb-4">{info.usageInstructionsTitle || "Cách dùng"}</h2>
+            {getSectionsByTypes(["how_to_use", "dosage", "overdose", "missed_dose"]).length > 0 ? (
+              getSectionsByTypes(["how_to_use", "dosage", "overdose", "missed_dose"]).map((sec) => (
+                <div key={sec.id} className="mb-4">
+                  <h3 className="font-semibold mt-2 mb-2">
+                    {sec.subtitle || SECTION_TYPE_LABELS[sec.sectionType]}
+                  </h3>
+                  <div
+                    className="text-gray-700 drug-info-content"
+                    dangerouslySetInnerHTML={{ __html: sec.content || '' }}
+                  />
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400 italic text-sm">Chưa có thông tin cách dùng.</p>
+            )}
           </div>
-          {/* Tác dụng phụ */}
+
+          {/* ===== Tác dụng phụ ===== */}
           <div ref={sectionRefs.sideEffects} id="sideEffects" className="mb-8 scroll-mt-24">
-            <h2 className="font-bold text-xl mb-4">{info.sideEffects?.title || "Tác dụng phụ"}</h2>
-            {renderPortableText(info.sideEffects?.content)}
+            <h2 className="font-bold text-xl mb-4">{info.sideEffectsTitle || "Tác dụng phụ"}</h2>
+            {getSectionsByTypes(["side_effects"]).length > 0 ? (
+              getSectionsByTypes(["side_effects"]).map((sec) => (
+                <div key={sec.id}>
+                  {sec.subtitle && <h3 className="font-semibold mb-2">{sec.subtitle}</h3>}
+                  <div
+                    className="text-gray-700 drug-info-content"
+                    dangerouslySetInnerHTML={{ __html: sec.content || '' }}
+                  />
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400 italic text-sm">Chưa có thông tin tác dụng phụ.</p>
+            )}
           </div>
-          {/* Lưu ý */}
+
+          {/* ===== Lưu ý ===== */}
           <div ref={sectionRefs.warningsAndPrecautions} id="warningsAndPrecautions" className="mb-8 scroll-mt-24">
             <div className="bg-[#fff3e0] p-4 rounded-md mb-4">
               <div className="font-bold text-yellow-500 flex text-2xl items-center mt-1 mb-2">
                 <span style={{ fontSize: 20, marginRight: 8 }}>⚠️</span>
-                {info.warningsAndPrecautions?.mainNoteTitle || "Lưu ý"}
+                {info.warningsMainNoteTitle || "Lưu ý"}
               </div>
-              {renderPortableText(info.warningsAndPrecautions?.introText || [])}
-              <div className="font-semibold mt-3 mb-4">{info.warningsAndPrecautions?.contraindications?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.contraindications?.content)}
-              <div className="font-semibold mt-5 mb-4">{info.warningsAndPrecautions?.precautions?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.precautions?.content)}
-              <div className="font-semibold mt-5 mb-4">{info.warningsAndPrecautions?.drivingAndOperatingMachinery?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.drivingAndOperatingMachinery?.content)}
-              <div className="font-semibold mt-5 mb-4">{info.warningsAndPrecautions?.pregnancy?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.pregnancy?.content)}
-              <div className="font-semibold mt-5 mb-4">{info.warningsAndPrecautions?.breastfeeding?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.breastfeeding?.content)}
-              <div className="font-semibold mt-5 mb-4">{info.warningsAndPrecautions?.drugInteractions?.subtitle}</div>
-              {renderPortableText(info.warningsAndPrecautions?.drugInteractions?.content)}
+              {info.warningsIntroText && (
+                <div
+                  className="text-gray-700 mb-3 drug-info-content"
+                  dangerouslySetInnerHTML={{ __html: info.warningsIntroText }}
+                />
+              )}
+              {getSectionsByTypes([
+                "contraindications", "precautions", "driving_and_machinery",
+                "pregnancy", "breastfeeding", "drug_interactions",
+              ]).length > 0 ? (
+                getSectionsByTypes([
+                  "contraindications", "precautions", "driving_and_machinery",
+                  "pregnancy", "breastfeeding", "drug_interactions",
+                ]).map((sec) => (
+                  <div key={sec.id} className="mb-3">
+                    <div className="font-semibold mt-3 mb-1">
+                      {sec.subtitle || SECTION_TYPE_LABELS[sec.sectionType]}
+                    </div>
+                    <div
+                      className="text-gray-700 drug-info-content"
+                      dangerouslySetInnerHTML={{ __html: sec.content || '' }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 italic text-sm">Chưa có thông tin lưu ý.</p>
+              )}
             </div>
           </div>
-          {/* Bảo quản */}
+
+          {/* ===== Bảo quản ===== */}
           <div ref={sectionRefs.storage} id="storage" className="mb-8 scroll-mt-24">
-            <h2 className="font-bold text-xl mb-2">{info.storage?.title || "Bảo quản"}</h2>
-            {renderPortableText(info.storage?.content)}
+            <h2 className="font-bold text-xl mb-2">{info.storageTitle || "Bảo quản"}</h2>
+            {getSectionsByTypes(["storage"]).length > 0 ? (
+              getSectionsByTypes(["storage"]).map((sec) => (
+                <div key={sec.id}>
+                  {sec.subtitle && <h3 className="font-semibold mb-2">{sec.subtitle}</h3>}
+                  <div
+                    className="text-gray-700 drug-info-content"
+                    dangerouslySetInnerHTML={{ __html: sec.content || '' }}
+                  />
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400 italic text-sm">Chưa có thông tin bảo quản.</p>
+            )}
           </div>
-          {/* Hiệu ứng mờ phía dưới khi chưa mở rộng */}
+
+          {/* Gradient fade */}
           {!expanded && (
             <div
               style={{
                 position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
+                left: 0, right: 0, bottom: 0,
                 height: 80,
                 background: "linear-gradient(to top, #fff, rgba(255,255,255,0))",
                 pointerEvents: "none",
@@ -338,6 +333,7 @@ const ProductInfo = ({ info }: Props) => {
             />
           )}
         </div>
+
         {/* Nút xem thêm/thu gọn */}
         <div className="flex justify-center mt-2 mb-4">
           <button
@@ -355,10 +351,11 @@ const ProductInfo = ({ info }: Props) => {
             )}
           </button>
         </div>
-         {/* Box cảnh báo cuối trang */}
-         <div className="mt-2 mb-2 p-3 bg-blue-50 rounded-md flex items-center" style={{ borderLeft: "5px solid #1976d2" }}>
+
+        {/* Box cảnh báo */}
+        <div className="mt-2 mb-2 p-3 bg-blue-50 rounded-md flex items-center" style={{ borderLeft: "5px solid #1976d2" }}>
           <span className="text-blue-600 text-sm">
-            Mọi thông tin trên đây chi mang tính chất tham khảo. Việc sử dụng thuốc phải tuân theo hướng dẫn của bác sĩ chuyên môn.
+            Mọi thông tin trên đây chỉ mang tính chất tham khảo. Việc sử dụng thuốc phải tuân theo hướng dẫn của bác sĩ chuyên môn.
           </span>
         </div>
       </div>

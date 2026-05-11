@@ -1,7 +1,5 @@
 import Container from "@/components/Container";
-import Title from "@/components/Title";
-import { urlFor } from "@/sanity/lib/image";
-import { getAllBlog } from "@/sanity/queries";
+import { blogService } from "@/services/blog.service";
 import dayjs from "dayjs";
 import { Calendar } from "lucide-react";
 import Image from "next/image";
@@ -9,26 +7,37 @@ import Link from "next/link";
 import React from "react";
 
 const BlogPage = async () => {
-  const blogs = await getAllBlog(6);
+  const blogsData = await blogService.getAllBlog(6);
+
+  const blogs = blogsData.map((blog) => ({
+    ...blog,
+    blogcategories: blog.blogBlogCategories?.map((bc) => bc.blogCategory) || [],
+  }));
 
   return (
     <div className="my-10">
       <Container className="">
         <div className="px-4 py-2 rounded-full bg-white ">
-          <h1 className="text-shop_light_green text-xl font-bold text-center"> Góc sức khỏe </h1>
+          <h1 className="text-shop_light_green text-xl font-bold text-center">
+            {" "}
+            Góc sức khỏe{" "}
+          </h1>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-5 md:mt-10">
           {blogs?.map((blog: any) => (
-            <div key={blog?._id} className="rounded-xl overflow-hidden group bg-white">
-              {blog?.mainImage && (
+            <div
+              key={blog?.id}
+              className="rounded-xl overflow-hidden group bg-white"
+            >
+              {blog?.mainImageUrl && (
                 <div className="p-2">
-                <Image
-                  src={urlFor(blog?.mainImage).url()}
-                  alt="blogImage"
-                  width={500}
-                  height={500}
-                  className="w-full max-h-80 object-cover rounded-xl"
-                />
+                  <Image
+                    src={blog.mainImageUrl}
+                    alt="blogImage"
+                    width={500}
+                    height={500}
+                    className="w-full max-h-80 object-cover rounded-xl"
+                  />
                 </div>
               )}
               <div className="bg-white p-5">
@@ -51,7 +60,7 @@ const BlogPage = async () => {
                   </p>
                 </div>
                 <Link
-                  href={`/blog/${blog?.slug?.current}`}
+                  href={`/blog/${blog?.slug}`}
                   className="text-base font-bold tracking-wide mt-5 line-clamp-2 hover:text-shop_dark_green hoverEffect"
                 >
                   {blog?.title}

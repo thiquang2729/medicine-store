@@ -331,7 +331,7 @@ const OrderDetailDialog: React.FC<OrderDetailsDialogProps> = ({
                               <div className="flex items-center gap-3">
                                 {product?.images && (
                                   <img
-                                    src={urlFor(product.images[0]).width(50).height(50).url()}
+                                    src={(item as any).product?.images?.[0]?.url || (item.product?.images && (urlFor(item.product.images[0]) as any).width(50).height(50).url())}
                                     alt={product.name}
                                     className="w-12 h-12 object-cover rounded"
                                   />
@@ -373,7 +373,7 @@ const OrderDetailDialog: React.FC<OrderDetailsDialogProps> = ({
                         <div className="flex items-start gap-3">
                           {product?.images && (
                             <img
-                              src={urlFor(product.images[0]).width(60).height(60).url()}
+                              src={(item as any).product?.images?.[0]?.url || (item.product?.images && (urlFor(item.product.images[0]) as any).width(60).height(60).url())}
                               alt={product.name}
                               className="w-15 h-15 object-cover rounded"
                             />

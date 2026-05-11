@@ -169,7 +169,8 @@ const CartPage = () => {
 
   const fetchProvinces = async () => {
     try {
-      const data = await client.fetch(PROVINCES_QUERY);
+      const res = await fetch("/api/locations?type=provinces");
+      const data = await res.json();
       setProvinces(data);
     } catch (error) {
       console.error("Error fetching provinces:", error);
@@ -178,7 +179,8 @@ const CartPage = () => {
 
   const fetchWards = async (provinceId: string) => {
     try {
-      const data = await client.fetch(WARDS_BY_PROVINCE_QUERY, { provinceId });
+      const res = await fetch(`/api/locations?type=wards&provinceId=${provinceId}`);
+      const data = await res.json();
       setWards(data);
     } catch (error) {
       console.error("Error fetching wards:", error);

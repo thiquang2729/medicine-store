@@ -2,7 +2,12 @@
 import React, { useState } from 'react';
 import { client } from '@/sanity/lib/client';
 import AddressForm from '../components/AddressForm';
-import { SubmittedAddress } from '@/sanity.types'; // Kiểu dữ liệu để gửi lên Sanity
+
+interface SubmittedAddress {
+  streetAddress: string;
+  province: { _ref: string; _type: string };
+  ward: { _ref: string; _type: string };
+}
 
 // Đây là ID của một tài liệu Customer có sẵn mà chúng ta sẽ cập nhật
 // THAY THẾ BẰNG ID THỰC TẾ CỦA TÀI LIỆU CẦN CẬP NHẬT HOẶC CƠ CHẾ TẠO MỚI

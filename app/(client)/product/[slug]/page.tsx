@@ -7,7 +7,9 @@ import ProductCharacteristics from "@/components/ProductCharacteristics";
 import ProductInfo from "@/components/ProductInfo";
 import ProductReviews from "@/components/reviews/ProductReviews";
 import ReviewStars from "@/components/reviews/ReviewStars";
-import { getProductBySlug, getProductReviewSummary } from "@/sanity/queries";
+import { productService } from "@/services/product.service";
+import { reviewService } from "@/services/review.service";
+import { serializePrisma } from "@/lib/utils";
 import { CornerDownLeft, Truck } from "lucide-react";
 import { notFound } from "next/navigation";
 import React from "react";
@@ -22,18 +24,30 @@ const SingleProductPage = async ({
   params: Promise<{ slug: string }>;
 }) => {
   const { slug } = await params;
-  const product  = await getProductBySlug(slug);
+  const productData = serializePrisma(await productService.getProductBySlug(slug));
   
+  if (!productData) {
+    return notFound();
+  }
+
+  // Ánh xạ dữ liệu Prisma sang định dạng tương thích với giao diện
+  const product: any = {
+    ...productData,
+    _id: productData.id,
+    _type: 'product',
+    slug: { current: productData.slug },
+    images: productData.images?.map(img => img.imageUrl) || [],
+    categories: productData.productCategories?.map(pc => pc.category.title) || [],
+    drugInfo: productData.drugInfo ?? null,
+  };
+
   // Lấy dữ liệu đánh giá thực từ database
   let reviewSummary = { total: 0, average: 0 };
   if (product?._id) {
-    reviewSummary = await getProductReviewSummary(product._id);
+    reviewSummary = await reviewService.getProductReviewStats(product._id);
   }
   
   console.log("params", params);
-  if (!product) {
-    return notFound();
-  }
   
   return (
     <>

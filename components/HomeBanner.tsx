@@ -1,13 +1,11 @@
 import React from "react";
-import { getBanners } from "@/sanity/queries";
-import { Banner } from "@/sanity.types";
+import { bannerService } from "@/services/banner.service";
 import HomeBannerClient from "./HomeBannerClient";
-
 
 // Server Component - fetch dữ liệu từ server
 const HomeBanner = async () => {
-  // Fetch dữ liệu banner từ server
-  const bannerData: Banner[] = await getBanners();
+  // Fetch dữ liệu banner từ Postgres Server
+  const bannerData: any = await bannerService.getBanners();
 
   return <HomeBannerClient bannerData={bannerData} />;
 };

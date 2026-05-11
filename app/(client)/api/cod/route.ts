@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { backendClient } from "@/sanity/lib/backendClient";
 import { v4 as uuidv4 } from "uuid";
 import { sendOrderConfirmationEmail, OrderData } from "@/lib/email-service";
+import { orderService } from "@/services/order.service";
+import { prisma } from "@/db";
 
 export async function POST(req: Request) {
   try {
@@ -34,86 +35,57 @@ export async function POST(req: Request) {
     const estimatedDeliveryDate = new Date();
     estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + 4); // 4 ngày sau
 
-    // Debug dữ liệu sẽ lưu vào Sanity
-    console.log("Order data to be saved:");
-    console.log("Email to save:", customerInfo.email);
-
-    const order = await backendClient.create({
-      _type: "order",
+    const order = await orderService.createOrder({
       orderNumber,
       clerkUserId: customerInfo.clerkUserId,
       customerName: customerInfo.name,
       email: customerInfo.email,
       phone: customerInfo.phone,
-      orderNotes: orderNotes || "",
-      shippingAddress: {
-        _type: "vietnameseAddress",
-        streetAddress: shippingAddress.street,
-        province: {
-          _type: "reference",
-          _ref: shippingAddress.provinceId,
-        },
-        ward: {
-          _type: "reference",
-          _ref: shippingAddress.wardId,
-        },
-      },
-      products: cart.map((item: any) => ({
-        _key: item._id,
-        product: {
-          _type: "reference",
-          _ref: item._id,
-        },
-        quantity: item.quantity,
-      })),
+      shippingStreetAddress: shippingAddress.street,
+      shippingProvinceId: shippingAddress.provinceId,
+      shippingWardId: shippingAddress.wardId,
       totalPrice,
-      currency: "VND",
       amountDiscount: discountAmount || 0,
-      // Thêm thông tin mã giảm giá nếu có
-      ...(appliedCoupon && {
-        appliedCoupon: {
-          _type: "reference",
-          _ref: appliedCoupon._id,
-        },
-        couponCode: appliedCoupon.code,
-      }),
-      shippingFee: shippingDiscount ? 0 : 30000, // Miễn phí vận chuyển nếu có mã giảm giá shipping
-      estimatedDeliveryDate: estimatedDeliveryDate.toISOString(),
+      shippingFee: shippingDiscount ? 0 : 30000,
       paymentMethod: "cod",
-      isPaid: false,
-      status: "pending",
-      orderDate: new Date().toISOString(),
+      appliedCouponId: appliedCoupon?._id || null,
+      couponCode: appliedCoupon?.code || null,
+      items: cart.map((item: any) => ({
+        productId: item._id,
+        quantity: item.quantity,
+      }))
     });
 
     // Gửi email xác nhận đơn hàng
     try {
-      // Lấy thông tin chi tiết sản phẩm từ cart
+      // Lấy thông tin chi tiết sản phẩm từ cart bằng Prisma
       const productDetails = await Promise.all(
         cart.map(async (item: any) => {
-          const product = await backendClient.fetch(
-            `*[_type == "product" && _id == $productId][0]{ name, price, discount }`,
-            { productId: item._id }
-          );
+          const product = await prisma.product.findUnique({
+            where: { id: item._id },
+            select: { name: true, price: true, discount: true }
+          });
           return {
             name: product?.name || "Sản phẩm",
             quantity: item.quantity,
             price: product?.price || 0,
-            discount: product?.discount || 0, // Thêm thông tin discount
+            discount: product?.discount || 0,
           };
         })
       );
 
-      // Lấy thông tin địa chỉ chi tiết
-      const addressDetails = await backendClient.fetch(
-        `{
-          "province": *[_type == "province" && _id == $provinceId][0]{ name },
-          "ward": *[_type == "ward" && _id == $wardId][0]{ name }
-        }`,
-        { 
-          provinceId: shippingAddress.provinceId,
-          wardId: shippingAddress.wardId 
-        }
-      );
+      // Lấy thông tin địa chỉ chi tiết bằng Prisma
+      const province = await prisma.province.findUnique({
+        where: { id: shippingAddress.provinceId }
+      });
+      const ward = await prisma.ward.findUnique({
+        where: { id: shippingAddress.wardId }
+      });
+
+      const addressDetails = {
+        province: province || { name: "Không xác định" },
+        ward: ward || { name: "Không xác định" }
+      };
 
       // Chuẩn bị dữ liệu email
       const emailData: OrderData = {

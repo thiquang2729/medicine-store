@@ -1,9 +1,7 @@
 "use client";
 
-import { Product } from "@/sanity.types";
 import { useState, useEffect } from "react";
-import { getProductReviewSummaryClient } from "@/sanity/queries/client";
-import { urlFor } from "@/sanity/lib/image";
+import { getProductReviewSummary } from "@/actions/review.action";
 import Image from "next/image";
 import Link from "next/link";
 import { Flame } from "lucide-react";
@@ -18,35 +16,26 @@ interface ReviewSummary {
   average: number;
 }
 
-const ProductCardWrapper = ({ product }: { product: Product }) => {
-  const [reviewSummary, setReviewSummary] = useState<ReviewSummary>({
+const ProductCardWrapper = ({ product }: { product: any }) => {
+  const reviewSummary = product.reviewSummary || {
     total: 0,
     average: 0
-  });
-  const [loading, setLoading] = useState(true);
+  };
+  const loading = false;
 
-  useEffect(() => {
-    const fetchReviewSummary = async () => {
-      try {
-        const summary = await getProductReviewSummaryClient(product._id);
-        setReviewSummary(summary);
-      } catch (error) {
-        console.error("Error fetching review summary:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchReviewSummary();
-  }, [product._id]);
+  // Lấy URL ảnh: hỗ trợ cả format mới (string[]) và cũ
+  const imageUrl = Array.isArray(product?.images) && product.images.length > 0
+    ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0]?.imageUrl)
+    : null;
 
   return (
     <div className="text-sm border-[1px] rounded-2xl border-white group bg-white hover:border-shop_light_green/80 transition-all duration-300">
       <div className="relative group overflow-hidden bg-shop_light_bg rounded-2xl">
-        {product?.images && (
-          <Link href={`/product/${product?.slug?.current}`}>
+        {imageUrl && (
+          <Link href={`/product/${product?.slug?.current || product?.slug}`}>
             <Image
-              src={urlFor(product.images[0]).url()}
+              src={imageUrl}
               alt="productImage"
               width={1000}
               height={1000}
@@ -78,7 +67,7 @@ const ProductCardWrapper = ({ product }: { product: Product }) => {
       <div className="p-3 flex flex-col gap-2">
         {product?.categories && (
           <p className="uppercase line-clamp-1 text-xs font-medium text-lightText">
-            {product.categories.map((cat) => cat).join(", ")}
+            {product.categories.map((cat: any) => cat).join(", ")}
           </p>
         )}
         <Title className="text-sm line-clamp-1">{product?.name}</Title>
@@ -129,4 +118,5 @@ const ProductCardWrapper = ({ product }: { product: Product }) => {
   );
 };
 
-export default ProductCardWrapper; 
+export default ProductCardWrapper;
+ 

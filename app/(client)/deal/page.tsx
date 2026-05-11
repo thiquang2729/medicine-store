@@ -2,13 +2,21 @@ import Container from "@/components/Container";
 import NoProductAvailable from "@/components/NoProductAvailable";
 import ProductCardWrapper from "@/components/ProductCardWrapper";
 import Title from "@/components/Title";
-import { getDealProducts } from "@/sanity/queries";
+import { productService } from "@/services/product.service";
 import { Flame, ShoppingBag } from "lucide-react";
 import React from "react";
 
 // Component trang Deal - hiển thị sản phẩm khuyến mãi
 const DealPage = async () => {
-  const products = await getDealProducts();
+  const dealData = await productService.getDealProducts();
+  const products = dealData.map((p: any) => ({
+    ...p,
+    _id: p.id,
+    _type: 'product',
+    slug: { current: p.slug },
+    images: p.images?.map((img: any) => img.imageUrl) || [],
+    categories: p.productCategories?.map((pc: any) => pc.category.title) || [],
+  })) as any[];
 
   return (
     <div className="bg-[#f1f3f8] min-h-screen">

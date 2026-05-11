@@ -162,3 +162,106 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Styling cho nội dung HTML từ drugInfo */
+.drug-info-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.drug-info-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.drug-info-content li {
+  margin-bottom: 0.5rem;
+}
+
+.drug-info-content a {
+  color: #1856de;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.drug-info-content a:hover {
+  color: #113585;
+}
+
+.drug-info-content strong {
+  font-weight: 700;
+  color: #113585;
+}
+
+.drug-info-content em {
+  font-style: italic;
+}
+
+/* Styling cho nội dung HTML từ blog */
+.blog-content p {
+  margin-bottom: 1.25rem;
+  line-height: 1.8;
+}
+
+.blog-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #113585;
+}
+
+.blog-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #113585;
+}
+
+.blog-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.blog-content ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+
+.blog-content blockquote {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 2rem;
+  background-color: #f1f5f9;
+  border-radius: 0.75rem;
+  border-left: 4px solid #1856de;
+}
+
+.blog-content img {
+  width: 100%;
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+}
+
+.blog-content strong {
+  font-weight: 600;
+  color: #113585;
+}
+
+.blog-content a {
+  color: #1856de;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.blog-content a:hover {
+  color: #113585;
+}

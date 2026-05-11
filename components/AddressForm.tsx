@@ -1,7 +1,30 @@
 // components/AddressForm.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { client } from '@/sanity/lib/client'; // Đảm bảo đường dẫn đúng
-import { ProvinceData, WardData, SubmittedAddress, InitialSelectedAddress } from '@/sanity.types';
+export interface ProvinceData {
+  _id: string;
+  name: string;
+  code: string;
+}
+
+export interface WardData {
+  _id: string;
+  name: string;
+  code: string;
+}
+
+export interface SubmittedAddress {
+  streetAddress: string;
+  province: { _ref: string; _type: string };
+  ward: { _ref: string; _type: string };
+  _type?: string;
+}
+
+export interface InitialSelectedAddress {
+  streetAddress?: string;
+  province?: { _id: string };
+  ward?: { _id: string };
+}
 
 interface AddressFormProps {
   onAddressChange: (address: SubmittedAddress | null) => void; // Có thể trả về null nếu chưa đủ

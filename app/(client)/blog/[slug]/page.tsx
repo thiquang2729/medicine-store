@@ -1,15 +1,8 @@
 import Container from "@/components/Container";
 import Title from "@/components/Title";
-import { SINGLE_BLOG_QUERYResult } from "@/sanity.types";
-import { urlFor } from "@/sanity/lib/image";
-import {
-  getBlogCategories,
-  getOthersBlog,
-  getSingleBlog,
-} from "@/sanity/queries";
+import { blogService } from "@/services/blog.service";
 import dayjs from "dayjs";
 import { Calendar, ChevronLeftIcon, Pencil } from "lucide-react";
-import { PortableText } from "next-sanity";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,16 +14,22 @@ const SingleBlogPage = async ({
   params: Promise<{ slug: string }>;
 }) => {
   const { slug } = await params;
-  const blog: SINGLE_BLOG_QUERYResult = await getSingleBlog(slug);
-  if (!blog) return notFound();
+  const blogData = await blogService.getSingleBlog(slug);
+  if (!blogData) return notFound();
+
+  const blog = {
+    ...blogData,
+    blogcategories:
+      blogData.blogBlogCategories?.map((bc) => bc.blogCategory) || [],
+  };
 
   return (
     <div className="py-10 bg-white">
       <Container className="grid grid-cols-1 lg:grid-cols-4 gap-5 bg-white">
         <div className="md:col-span-3">
-          {blog?.mainImage && (
+          {blog?.mainImageUrl && (
             <Image
-              src={urlFor(blog?.mainImage).url()}
+              src={blog.mainImageUrl}
               alt={blog.title || "Blog Image"}
               width={800}
               height={800}
@@ -41,7 +40,7 @@ const SingleBlogPage = async ({
             <div className="text-xs flex items-center gap-5 my-7">
               <div className="flex items-center relative group cursor-pointer">
                 {blog?.blogcategories?.map(
-                  (item: { title: string }, index: number) => (
+                  (item: { title: string | null }, index: number) => (
                     <p
                       key={index}
                       className="font-semibold text-shop_light_green tracking-wider"
@@ -67,113 +66,9 @@ const SingleBlogPage = async ({
               <div className="text-lightColor">
                 <div>
                   {blog.body && (
-                    <PortableText
-                      value={blog.body}
-                      components={{
-                        block: {
-                          normal: ({ children }) => (
-                            <p className="my-5 text-darkColor first:mt-0 last:mb-0">
-                              {children}
-                            </p>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="my-5 text-2xl/8 font-medium tracking-tight text-gray-950 first:mt-0 last:mb-0">
-                              {children}
-                            </h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="my-5 text-xl/8 font-medium tracking-tight text-gray-950 first:mt-0 last:mb-0">
-                              {children}
-                            </h3>
-                          ),
-                          blockquote: ({ children }) => (
-                            <blockquote className="relative my-6 rounded-xl bg-slate-100 p-8">
-
-                                {/* Nội dung trích dẫn */}
-                                <div className="relative z-10 text-base text-slate-700 border-l-4 border-l-shop_light_green/50 pl-6">
-                                    {children}
-                                </div>
-                            </blockquote>
-                        ),
-                        },
-                        types: {
-                          image: ({ value }) => (
-                            <Image
-                              alt={value.alt || ""}
-                              src={urlFor(value).width(2000).url()}
-                              className="w-full rounded-2xl"
-                              width={1400}
-                              height={1000}
-                            />
-                          ),
-                          separator: ({ value }) => {
-                            switch (value.style) {
-                              case "line":
-                                return (
-                                  <hr className="my-5 border-t border-gray-200" />
-                                );
-                              case "space":
-                                return <div className="my-5" />;
-                              default:
-                                return null;
-                            }
-                          },
-                        },
-                        list: {
-                          bullet: ({ children }) => (
-                            <ul className="list-disc pl-4 text-base/8 marker:text-gray-400">
-                              {children}
-                            </ul>
-                          ),
-                          number: ({ children }) => (
-                            <ol className="list-decimal pl-4 text-base/8 marker:text-gray-400">
-                              {children}
-                            </ol>
-                          ),
-                        },
-                        listItem: {
-                          bullet: ({ children }) => {
-                            return (
-                              <li className="my-2 pl-2 has-[br]:mb-8">
-                                {children}
-                              </li>
-                            );
-                          },
-                          number: ({ children }) => {
-                            return (
-                              <li className="my-2 pl-2 has-[br]:mb-8">
-                                {children}
-                              </li>
-                            );
-                          },
-                        },
-                        marks: {
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-gray-950">
-                              {children}
-                            </strong>
-                          ),
-                          code: ({ children }) => (
-                            <>
-                              <span aria-hidden>`</span>
-                              <code className="text-[15px]/8 font-semibold text-gray-950">
-                                {children}
-                              </code>
-                              <span aria-hidden>`</span>
-                            </>
-                          ),
-                          link: ({ value, children }) => {
-                            return (
-                              <Link
-                                href={value.href}
-                                className="font-medium text-gray-950 underline decoration-gray-400 underline-offset-4 data-[hover]:decoration-gray-600"
-                              >
-                                {children}
-                              </Link>
-                            );
-                          },
-                        },
-                      }}
+                    <div
+                      className="blog-content text-darkColor"
+                      dangerouslySetInnerHTML={{ __html: blog.body }}
                     />
                   )}
                   <div className="mt-10">
@@ -196,20 +91,20 @@ const SingleBlogPage = async ({
 };
 
 const BlogLeft = async ({ slug }: { slug: string }) => {
-  const categories = await getBlogCategories();
-  const blogs = await getOthersBlog(slug, 5);
+  const categoriesData = await blogService.getBlogCategories();
+  const blogsData = await blogService.getOthersBlog(slug, 5);
 
   return (
     <div>
       <div className=" shadow-md p-5 rounded-md bg-white">
         <Title className="text-base">Danh mục bài viết</Title>
         <div className="space-y-2 mt-2">
-          {categories?.map(({ blogcategories }, index) => (
+          {categoriesData?.map((category, index) => (
             <div
               key={index}
               className="text-lightColor flex items-center justify-between text-sm font-medium"
             >
-              <p>{blogcategories[0]?.title}</p>
+              <p>{category.title}</p>
               <p className="text-darkColor font-semibold">{`(1)`}</p>
             </div>
           ))}
@@ -218,15 +113,15 @@ const BlogLeft = async ({ slug }: { slug: string }) => {
       <div className="shadow-md p-5 rounded-md mt-10 bg-white ">
         <Title className="text-base">Bài viết mới nhất</Title>
         <div className="space-y-4 mt-4">
-          {blogs?.map((blog: Blog, index: number) => (
+          {blogsData?.map((blog, index) => (
             <Link
-              href={`/blog/${blog?.slug?.current}`}
+              href={`/blog/${blog.slug}`}
               key={index}
               className="flex items-center gap-2 group"
             >
-              {blog?.mainImage && (
+              {blog.mainImageUrl && (
                 <Image
-                  src={urlFor(blog?.mainImage).url()}
+                  src={blog.mainImageUrl}
                   alt="blogImage"
                   width={100}
                   height={100}
@@ -234,7 +129,7 @@ const BlogLeft = async ({ slug }: { slug: string }) => {
                 />
               )}
               <p className="line-clamp-2 text-sm text-lightColor group-hover:text-shop_dark_green hoverEffect">
-                {blog?.title}
+                {blog.title}
               </p>
             </Link>
           ))}

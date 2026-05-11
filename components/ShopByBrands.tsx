@@ -1,9 +1,8 @@
 import React from "react";
 import Title from "./Title";
 import Link from "next/link";
-import { getBrands } from "@/sanity/queries";
+import { productService } from "@/services/product.service";
 import Image from "next/image";
-import { urlFor } from "@/sanity/lib/image";
 import { GitCompareArrows, Headset, ShieldCheck, Truck } from "lucide-react";
 
 const extraData = [
@@ -30,7 +29,7 @@ const extraData = [
 ];
 
 const ShopByBrands = async () => {
-  const brands = await getBrands();
+  const brands: any = await productService.getBrands();
   return (
     <div className="mb-10 lg:mb-20 bg-white p-5 lg:p-7 rounded-2xl border border-shop_light_green/20">
       <div className="flex items-center gap-5 justify-between mb-10">
@@ -45,13 +44,13 @@ const ShopByBrands = async () => {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5">
         {brands?.map((brand: any) => (
           <Link
-            key={brand?._id}
-            href={{ pathname: "/shop", query: { brand: brand?.slug?.current } }}
+            key={brand?.id}
+            href={{ pathname: "/shop", query: { brand: brand?.slug } }}
             className="bg-white w-34 h-24 flex items-center justify-center rounded-md overflow-hidden hover:shadow-lg shadow-shop_dark_green/20 hoverEffect"
           >
-            {brand?.image && (
+            {brand?.imageUrl && (
               <Image
-                src={urlFor(brand?.image).url()}
+                src={brand?.imageUrl}
                 alt="brandImage"
                 width={250}
                 height={250}

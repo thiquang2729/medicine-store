@@ -12,6 +12,7 @@ import { Loader2, Filter, X } from "lucide-react";
 import NoProductAvailable from "./NoProductAvailable";
 import ProductCardWrapper from "./ProductCardWrapper";
 import { motion, AnimatePresence } from "motion/react";
+import { getFilteredProducts } from "@/actions/product.action";
 
 interface Props {
   categories: Category[];
@@ -55,22 +56,24 @@ const Shop = ({ categories, brands }: Props) => {
         minPrice = min;
         maxPrice = max;
       }
-      const query = `
-      *[_type == 'product' 
-        && (!defined($selectedCategory) || references(*[_type == "category" && slug.current == $selectedCategory]._id))
-        && (!defined($selectedBrand) || references(*[_type == "brand" && slug.current == $selectedBrand]._id))
-        && price >= $minPrice && price <= $maxPrice
-      ] 
-      | order(name asc) {
-        ...,"categories": categories[]->title
-      }
-    `;
-      const data = await client.fetch(
-        query,
-        { selectedCategory: appliedCategory, selectedBrand: appliedBrand, minPrice, maxPrice },
-        { next: { revalidate: 0 } }
-      );
-      setProducts(data);
+      const data = await getFilteredProducts({
+        categoryId: appliedCategory,
+        brandId: appliedBrand,
+        minPrice,
+        maxPrice
+      });
+
+      // Ánh xạ dữ liệu Prisma sang định dạng tương thích với giao diện
+      const mappedProducts = data.map(product => ({
+        ...product,
+        _id: product.id,
+        _type: 'product',
+        slug: { current: product.slug },
+        categories: product.productCategories?.map(pc => pc.category.title) || [],
+        images: product.images?.map(img => img.imageUrl) || [],
+      }));
+
+      setProducts(mappedProducts as any);
     } catch (error) {
       console.log("Shop product fetching Error", error);
     } finally {

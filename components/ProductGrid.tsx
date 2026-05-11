@@ -3,64 +3,54 @@
 import React, { useEffect, useState } from "react";
 import ProductCardWrapper from "./ProductCardWrapper";
 import { motion, AnimatePresence } from "motion/react";
-import { client } from "@/sanity/lib/client";
+import { getProductsByVariant } from "@/actions/product.action";
 import NoProductAvailable from "./NoProductAvailable";
 import { Loader2 } from "lucide-react";
 import Container from "./Container";
 import HomeTabbar from "./HomeTabbar";
 import { productType } from "@/constants/data";
-import { Product } from "@/sanity.types";
 import { useRouter } from "next/navigation";
+
+// Map tab title sang Prisma enum ProductVariant
+const tabToVariantMap: Record<string, string> = {
+  "Thuốc": "thuoc",
+  "Thực phẩm chức năng": "thuc_pham_chuc_nang",
+  "Dược mỹ phẩm": "duoc_my_pham",
+  "Chăm sóc cá nhân": "cham_soc_ca_nhan",
+  "Trang thiết bị y tế": "trang_thiet_bi_y_te",
+  "Dinh dưỡng": "dinh_duong_thuc_pham_chuc_nang",
+  "Sinh lý": "sinh_ly",
+  "Tất cả": "all",
+};
 
 const ProductGrid = () => {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState("Thuốc");
-  const query = `*[_type == "product" && variant == $variant] | order(name asc){
-  ...,"categories": categories[]->title
-}`;
-// const queryAll = `*[_type == "product"] | order(name asc){
-//   ...,"categories": categories[]->title
-// }`;
 
-  let variant = selectedTab.toLowerCase();
-  if (variant === "thuốc") {
-    variant = "thuoc";
-  }
-  if (variant === "thực phẩm chức năng") {
-    variant = "thuc-pham-chuc-nang";
-  }
-  if (variant === "sinh lý") {
-    variant = "sinh-ly";
-  }
-  if (variant === "trang thiết bị y tế") {
-    variant = "trang-thiet-bi-y-te";
-  }
-  if (variant === "dinh dưỡng") {
-    variant = "dinh-duong";
-  }
-  if (variant === "dược mỹ phẩm") {
-    variant = "duoc-my-pham";
-  }
-  if (variant === "chăm sóc cá nhân") {
-    variant = "cham-soc-ca-nhan";
-  }
-  
-  const params = { variant };
-  console.log(params);
+  const variant = tabToVariantMap[selectedTab] || selectedTab.toLowerCase();
+
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // if (selectedTab === "Tất cả") {
-        //   const response = await client.fetch(queryAll);
-        //   setProducts(await response);
-        // } else {
-          const response = await client.fetch(query, params);
-          setProducts(await response);
-        // }
+          const response: any = await getProductsByVariant(variant);
+          const mappedProducts = response.map((p: any) => ({
+            _id: p.id,
+            name: p.name,
+            slug: { current: p.slug },
+            price: p.price,
+            discount: p.discount,
+            images: p.images.map((img: any) => img.imageUrl),
+            categories: p.productCategories.map((pc: any) => pc.category.title),
+            status: p.status,
+            variant: p.variant,
+            isFeatured: p.isFeatured,
+            stock: p.stock
+          }));
+          setProducts(mappedProducts);
       } catch (error) {
         console.log("Product fetching Error", error);
       } finally {

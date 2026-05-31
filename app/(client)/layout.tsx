@@ -5,6 +5,8 @@ import PromotionPopup from "@/components/PromotionPopup";
 import { ClerkProvider } from "@clerk/nextjs";
 import { bannerService } from "@/services/banner.service";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     template: "%s - Nhà thuốc Khủng Long Châu",

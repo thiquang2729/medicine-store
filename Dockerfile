@@ -17,9 +17,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# (Tuỳ chọn) Nếu bạn dùng Prisma, cần generate Prisma Client ở đây
-# COPY prisma ./prisma
-# RUN npx prisma generate
+# Khởi tạo Prisma Client để tương tác với cơ sở dữ liệu Postgres
+COPY prisma ./prisma
+RUN npx prisma generate
 
 # Xây dựng ứng dụng Next.js
 ENV NEXT_TELEMETRY_DISABLED=1

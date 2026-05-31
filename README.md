@@ -131,17 +131,44 @@ STORE_SUPPORT_EMAIL="support@example.com"
 
 ### 4️⃣ Chạy Ứng Dụng
 
-```bash
-# Chạy development server (Turbopack)
-npm run dev
-# App chạy tại http://localhost:3000
+Bạn có thể lựa chọn chạy ứng dụng trực tiếp trên máy cục bộ (Local) hoặc đóng gói chạy qua Docker.
 
-# Build production
+#### Cách 1: Chạy trực tiếp trên máy cục bộ (Local)
+
+```bash
+# 1. Chạy development server (Turbopack)
+npm run dev
+# Ứng dụng chạy tại http://localhost:3000
+
+# 2. Xây dựng ứng dụng cho Production
 npm run build
 
-# Chạy production
+# 3. Khởi chạy ứng dụng bản Production
 npm start
 ```
+
+#### Cách 2: Chạy bằng Docker (Khuyên dùng để kiểm thử & triển khai)
+
+Hệ thống đã tích hợp sẵn Docker Compose điều phối 3 dịch vụ: PostgreSQL (`db`), Web App (`web`) và VNPay Payment (`vnpay-backend`).
+
+```bash
+# 1. Khởi chạy toàn bộ các dịch vụ dưới nền (Background)
+docker compose up --build -d
+
+# 2. Đồng bộ hóa cấu trúc Database (chạy Prisma Migration)
+docker exec -it khunglongchau-web npx prisma db push
+
+# 3. Xem nhật ký hoạt động (Logs) của các dịch vụ
+docker compose logs -f
+
+# 4. Dừng toàn bộ hệ thống
+docker compose down
+```
+
+**Các cổng dịch vụ sau khi khởi chạy:**
+- **Frontend & Main Backend (Next.js):** [http://localhost:3000](http://localhost:3000)
+- **VNPay Payment Gateway:** [http://localhost:8888](http://localhost:8888)
+- **PostgreSQL Database:** `localhost:5432`
 
 ## 📁 Cấu Trúc Dự Án
 
@@ -219,7 +246,6 @@ khunglongchau-web/
 ├── lib/                               # Utilities
 ├── store.ts                           # Zustand store (giỏ hàng)
 ├── middleware.ts                      # Clerk auth middleware
-├── vnpay_nodejs/                      # VNPay Node.js integration
 └── database_schema.md                 # SQL schema documentation
 ```
 
@@ -239,56 +265,6 @@ khunglongchau-web/
 |----------|-------|
 | [`database_schema.md`](database_schema.md) | Cấu trúc database SQL (chuyển đổi từ Sanity) |
 
-## 🐛 Xử Lý Lỗi Thường Gặp
-
-### ❌ Lỗi Clerk Authentication
-
-**Triệu chứng:** Không đăng nhập được, redirect loop  
-**Giải pháp:**
-- Kiểm tra `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` và `CLERK_SECRET_KEY` trong `.env`
-- Đảm bảo domain đã được cấu hình trong Clerk Dashboard
-
-### ❌ Lỗi Sanity
-
-**Triệu chứng:** Không load được sản phẩm, Studio trắng  
-**Giải pháp:**
-- Kiểm tra `NEXT_PUBLIC_SANITY_PROJECT_ID` và tokens
-- Truy cập `/studio` để kiểm tra kết nối
-- Chạy `npm run typegen` để cập nhật types
-
-### ❌ Lỗi VNPay/MoMo
-
-**Triệu chứng:** Thanh toán không callback  
-**Giải pháp:**
-- Kiểm tra `VNP_RETURN_URL` và `MOMO_REDIRECT_URL` đúng URL
-- Với MoMo sandbox, cần ngrok cho IPN URL
-- Kiểm tra `VNP_HASHSECRET` chính xác
-
-### ❌ Lỗi Email
-
-**Triệu chứng:** Không gửi được email xác nhận  
-**Giải pháp:**
-- Dùng App Password (không phải mật khẩu tài khoản) cho Gmail
-- Bật "Less secure app access" hoặc dùng App Password 2FA
-- Kiểm tra `EMAIL_USER` và `EMAIL_PASSWORD`
-
-### ❌ Lỗi Build
-
-**Triệu chứng:** Build failed  
-**Giải pháp:**
-```bash
-# Xóa cache và build lại
-rm -rf .next node_modules
-npm install
-npm run build
-```
-
-## 📞 Liên Hệ & Hỗ Trợ
-
-- **Email:** khunglongchaucompany@gmail.com
-- **Hotline:** 0375232103
-
----
 
 <div align="center">
 

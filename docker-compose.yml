@@ -34,9 +34,21 @@ services:
       - NODE_ENV=production
       # Môi trường database: Sử dụng tên service 'db' để kết nối nội bộ
       - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@db:5432/${POSTGRES_DB:-khunglongchau}?schema=public
-      # TODO: Thêm các biến môi trường khác (VD: Clerk, VNPay, v.v.)
     env_file:
       - .env
 
+  # vnpay-backend:
+  #   build:
+  #     context: ./vnpay_nodejs
+  #     dockerfile: Dockerfile
+  #   container_name: khunglongchau-vnpay
+  #   restart: always
+  #   ports:
+  #     - "8888:8888"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=8888
+
 volumes:
   postgres_data:
+

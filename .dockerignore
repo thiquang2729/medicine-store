@@ -8,5 +8,5 @@ README.md
 .env*.local
 .vercel
 *.tar.gz
-sanity/
 knowledge/
+

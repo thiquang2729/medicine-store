@@ -2,13 +2,13 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // Email admin được phép truy cập
-const ADMIN_EMAIL = "anhdlcwk@gmail.com";
+const ADMIN_EMAIL = "thiquang2729@gmail.com";
 
 // Utility function để kiểm tra quyền admin trong API routes
 export async function checkAdminAuth() {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return {
         authorized: false,
@@ -37,8 +37,8 @@ export async function checkAdminAuth() {
     }
 
     const userData = await userResponse.json();
-    const userEmail = userData.email_addresses?.[0]?.email_address || 
-                     userData.primary_email_address?.email_address;
+    const userEmail = userData.email_addresses?.[0]?.email_address ||
+      userData.primary_email_address?.email_address;
 
     if (userEmail !== ADMIN_EMAIL) {
       return {

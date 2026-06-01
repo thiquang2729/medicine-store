@@ -8,10 +8,10 @@ import { Badge } from "@/components/ui/badge";
 // Component header cho admin dashboard
 export default function AdminHeader() {
   const { user } = useUser();
-  const adminEmail = "anhdlcwk@gmail.com";
-  
+  const adminEmail = "thiquang2729@gmail.com";
+
   const isAuthorizedAdmin = user?.primaryEmailAddress?.emailAddress === adminEmail ||
-                           user?.emailAddresses?.[0]?.emailAddress === adminEmail;
+    user?.emailAddresses?.[0]?.emailAddress === adminEmail;
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -27,7 +27,7 @@ export default function AdminHeader() {
               </Badge>
             )}
           </div>
-          
+
           {user && (
             <div className="text-sm text-gray-600">
               Chào mừng, <span className="font-medium">{user.firstName || "Admin"}</span>
@@ -62,8 +62,8 @@ export default function AdminHeader() {
                 </p>
               </div>
             )}
-            
-            <UserButton 
+
+            <UserButton
               appearance={{
                 elements: {
                   avatarBox: "h-8 w-8"

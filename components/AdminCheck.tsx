@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 // Email admin được phép truy cập
-const ADMIN_EMAIL = "anhdlcwk@gmail.com";
+const ADMIN_EMAIL = "thiquang2729@gmail.com";
 
 interface AdminCheckProps {
   children: React.ReactNode;
@@ -24,8 +24,8 @@ export default function AdminCheck({ children }: AdminCheckProps) {
   useEffect(() => {
     if (isLoaded) {
       // Lấy email từ user
-      const userEmail = user?.primaryEmailAddress?.emailAddress || 
-                       user?.emailAddresses?.[0]?.emailAddress;
+      const userEmail = user?.primaryEmailAddress?.emailAddress ||
+        user?.emailAddresses?.[0]?.emailAddress;
 
       if (userEmail === ADMIN_EMAIL) {
         setIsAuthorized(true);
@@ -69,11 +69,11 @@ export default function AdminCheck({ children }: AdminCheckProps) {
               <span className="font-medium">Quyền admin bị giới hạn</span>
             </div>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Bạn không có quyền truy cập vào khu vực quản trị. 
+              Bạn không có quyền truy cập vào khu vực quản trị.
               Chỉ có tài khoản admin được ủy quyền mới có thể truy cập.
             </p>
             <div className="pt-4">
-              <Button 
+              <Button
                 onClick={() => router.push("/")}
                 className="w-full"
               >

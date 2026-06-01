@@ -58,3 +58,36 @@ Sau khi file dump đã được tải lên thành công, hãy SSH vào máy ch�
    ```bash
    docker exec -it khunglongchau-db psql -U admin -d khunglongchau -c "SELECT COUNT(*) FROM \"Product\";"
    ```
+
+---
+
+## 💻 Hướng Dẫn Khôi Phục (Restore) Dữ Liệu Tại Máy Local
+
+Nếu bạn muốn khôi phục dữ liệu từ file `data_backup.dump` vào container Postgres đang chạy cục bộ (local) của bạn (ví dụ khi khởi chạy dự án lần đầu tiên hoặc khi muốn đồng bộ lại dữ liệu), hãy chạy các lệnh sau tại terminal máy local:
+
+1. **Sao chép file dump từ máy local vào thư mục tạm `/tmp` của container**:
+   ```bash
+   docker cp data_backup.dump khunglongchau-db1:/tmp/data_backup.dump
+   ```
+
+2. **Thực hiện khôi phục dữ liệu vào cơ sở dữ liệu cục bộ**:
+   ```bash
+   docker exec -i khunglongchau-db pg_restore -U admin -d khunglongchau -v /tmp/data_backup.dump
+   ```
+
+3. **Xóa file dump tạm thời bên trong container để giải phóng bộ nhớ**:
+   ```bash
+   docker exec -i khunglongchau-db rm /tmp/data_backup.dump
+   ```
+
+4. **Khởi động lại dịch vụ web để cập nhật kết nối**:
+   *(Đảm bảo Prisma Client và Next.js nhận diện đầy đủ cấu trúc bảng và dữ liệu mới)*
+   ```bash
+   docker compose restart web
+   ```
+
+5. **Kiểm tra số lượng sản phẩm để xác minh khôi phục thành công**:
+   ```bash
+   docker exec -i khunglongchau-db psql -U admin -d khunglongchau -c "SELECT COUNT(*) FROM products;"
+   ```
+

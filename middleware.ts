@@ -5,13 +5,13 @@ import { NextResponse } from "next/server";
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 // Email admin được phép truy cập
-const ADMIN_EMAIL = "anhdlcwk@gmail.com";
+const ADMIN_EMAIL = "thiquang2729@gmail.com";
 
 export default clerkMiddleware(async (auth, req) => {
   // Kiểm tra nếu là admin route
   if (isAdminRoute(req)) {
     const { userId } = await auth();
-    
+
     // Nếu chưa đăng nhập, chuyển hướng về trang chủ
     if (!userId) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -27,8 +27,8 @@ export default clerkMiddleware(async (auth, req) => {
 
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        const userEmail = userData.email_addresses?.[0]?.email_address || 
-                         userData.primary_email_address?.email_address;
+        const userEmail = userData.email_addresses?.[0]?.email_address ||
+          userData.primary_email_address?.email_address;
 
         // Kiểm tra nếu không phải email admin được phép
         if (userEmail !== ADMIN_EMAIL) {

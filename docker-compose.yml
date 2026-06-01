@@ -36,6 +36,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@db:5432/${POSTGRES_DB:-khunglongchau}?schema=public
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
 
   # vnpay-backend:
   #   build:

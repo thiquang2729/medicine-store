@@ -23,7 +23,6 @@ interface ReviewData {
 // GET - Lấy danh sách đánh giá theo sản phẩm
 export async function GET(request: NextRequest) {
   try {
-    console.log("=== Reviews API GET Request ===");
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -31,10 +30,7 @@ export async function GET(request: NextRequest) {
     const ratingFilter = searchParams.get("rating"); // Filter theo rating
     const sortBy = searchParams.get("sort") || "newest"; // Sort theo tiêu chí
 
-    console.log("Params:", { productId, limit, offset, ratingFilter, sortBy });
-
     if (!productId) {
-      console.log("Error: Missing productId");
       return NextResponse.json(
         { error: "productId là bắt buộc" },
         { status: 400 }
@@ -44,7 +40,6 @@ export async function GET(request: NextRequest) {
     // Kiểm tra xem có reviews nào trong database không
     const allReviewsQuery = `*[_type == "review"]`;
     const allReviews = await client.fetch(allReviewsQuery);
-    console.log("Total reviews in database:", allReviews.length);
 
     // Xây dựng filter conditions
     let filterConditions = `_type == "review" && product._ref == $productId && isApproved == true`;
@@ -94,9 +89,7 @@ export async function GET(request: NextRequest) {
       isApproved
     }`;
 
-    console.log("Query:", query);
     const reviews = await client.fetch(query, { productId });
-    console.log("Found reviews:", reviews.length);
 
     // Query lấy thống kê đánh giá - tất cả reviews cho sản phẩm (không filter)
     const statsQuery = `{
@@ -113,7 +106,6 @@ export async function GET(request: NextRequest) {
     }`;
 
     const stats = await client.fetch(statsQuery, { productId });
-    console.log("Stats raw:", stats);
 
     // Tính trung bình thủ công
     const average = stats.ratings && stats.ratings.length > 0 
@@ -144,7 +136,6 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    console.log("Response:", JSON.stringify(response, null, 2));
     return NextResponse.json(response);
 
   } catch (error) {
@@ -162,9 +153,7 @@ export async function GET(request: NextRequest) {
 // POST - Tạo đánh giá mới
 export async function POST(request: NextRequest) {
   try {
-    console.log("=== Reviews API POST Request ===");
     const body = await request.json();
-    console.log("Request body:", body);
 
     const {
       productId,
@@ -181,7 +170,6 @@ export async function POST(request: NextRequest) {
 
     // Validation dữ liệu
     if (!productId || !customerName || !customerEmail || !rating || !title || !comment) {
-      console.log("Validation failed - missing required fields");
       return NextResponse.json(
         { error: "Thiếu thông tin bắt buộc" },
         { status: 400 }
@@ -189,7 +177,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (rating < 1 || rating > 5) {
-      console.log("Validation failed - invalid rating:", rating);
       return NextResponse.json(
         { error: "Điểm đánh giá phải từ 1 đến 5" },
         { status: 400 }
@@ -203,14 +190,11 @@ export async function POST(request: NextRequest) {
     );
     
     if (!productCheck) {
-      console.log("Product not found:", productId);
       return NextResponse.json(
         { error: "Sản phẩm không tồn tại" },
         { status: 404 }
       );
     }
-
-    console.log("Product found:", productCheck.name);
 
     // Kiểm tra đánh giá đã tồn tại (optional - có thể comment để test)
     const existingReview = await client.fetch(
@@ -219,7 +203,6 @@ export async function POST(request: NextRequest) {
     );
 
     if (existingReview) {
-      console.log("Review already exists for this user and product");
       return NextResponse.json(
         { error: "Bạn đã đánh giá sản phẩm này rồi" },
         { status: 409 }
@@ -248,11 +231,8 @@ export async function POST(request: NextRequest) {
       helpfulCount: 0,
     };
 
-    console.log("Creating review with data:", reviewData);
-
     // Tạo đánh giá mới
     const newReview = await client.create(reviewData);
-    console.log("Review created successfully:", newReview._id);
 
     return NextResponse.json({
       success: true,

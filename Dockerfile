@@ -39,6 +39,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Tạo thư mục logs và phân quyền ghi cho user nextjs (tránh lỗi EACCES)
+RUN mkdir -p /app/logs && chown -R nextjs:nodejs /app/logs
+
 # Sao chép file public và cấu hình standalone của Next.js
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

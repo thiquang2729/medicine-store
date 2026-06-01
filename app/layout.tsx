@@ -1,5 +1,7 @@
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { GoogleAnalytics } from "@next/third-parties/google";
+
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="vi-VN">
@@ -32,6 +34,9 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
           }}
         />
         {children}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
         <Toaster
           position="bottom-right"
           toastOptions={{

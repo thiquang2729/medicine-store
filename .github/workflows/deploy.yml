@@ -1,63 +1,26 @@
-name: CI/CD Pipeline - Deploy to Cloud Docker
+name: Deploy Web to Alibaba Cloud
 
 on:
   push:
     branches:
-      - main # Kích hoạt khi push code hoặc merge pull request vào nhánh main
+      - master  # Đã sửa thành master cho đúng với repo của bạn
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      # Đăng nhập vào Docker Hub (hoặc GitHub Container Registry - GHCR)
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      # Build và Push ảnh Docker của Next.js App (Web)
-      - name: Build and Push Web Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/khunglongchau-web:latest
-            ${{ secrets.DOCKER_USERNAME }}/khunglongchau-web:${{ github.sha }}
-
-
   deploy:
-    needs: build-and-push
     runs-on: ubuntu-latest
+
     steps:
-      # SSH kết nối vào Cloud Server để cập nhật Docker Container
-      - name: Deploy to Cloud Server via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            # 1. Chuyển vào thư mục chứa dự án trên Cloud
-            cd /home/${{ secrets.SSH_USER }}/khunglongchau-web
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-            # 2. Kéo code mới nhất về (để lấy file docker-compose.yml và .env mới nhất nếu có)
-            git pull origin main
-
-            # 3. Kéo các ảnh Docker (Images) mới nhất vừa build từ Docker Hub về
-            docker compose pull
-
-            # 4. Khởi chạy lại các dịch vụ với ảnh Docker mới mà không gây gián đoạn lớn
-            docker compose up -d
-
-            # 5. Thực thi tự động cập nhật cấu trúc database với Prisma
-            docker exec -i khunglongchau-web npx prisma db push
-
-            # 6. Dọn dẹp các ảnh Docker cũ để tránh đầy bộ nhớ máy chủ
-            docker image prune -f
+    - name: Executing remote ssh commands using ssh key
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          cd /workspace/medicine-store
+          git pull origin master  # Đã sửa thành master
+          docker compose up -d --build

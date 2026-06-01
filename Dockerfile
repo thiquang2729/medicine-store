@@ -23,6 +23,7 @@ RUN npx prisma generate
 
 # Xây dựng ứng dụng Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 RUN npm run build
 
 # ==========================================

@@ -3,7 +3,7 @@ name: Deploy Web to Alibaba Cloud
 on:
   push:
     branches:
-      - master  # Đã sửa thành master cho đúng với repo của bạn
+      - master
 
 jobs:
   deploy:
@@ -21,6 +21,6 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd /workspace/medicine-store
-          git pull origin master  # Đã sửa thành master
+          cd /root/workspace/medicine-store
+          git pull origin master
           docker compose up -d --build

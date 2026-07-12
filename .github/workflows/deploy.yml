@@ -1,19 +1,18 @@
-name: Deploy Web to Alibaba Cloud
+name: Deploy Medicine Store to AWS
 
 on:
   push:
-    branches:
-      - master
+    branches: [ "main" ] # Hoặc đổi thành "master" nếu bạn đang dùng nhánh master
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Dùng máy chủ của GitHub
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Executing remote ssh commands using ssh key
+    - name: Deploy qua SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_IP }}
@@ -21,6 +20,15 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd /root/workspace/medicine-store
-          git pull origin master
-          docker compose up -d --build
+          # 1. Di chuyển vào thư mục chứa dự án trên AWS (Bạn hãy đổi đường dẫn đúng của bạn)
+          cd /var/www/medicine-store || cd ~/medicine-store
+          
+          # 2. Kéo code mới nhất về server
+          git pull origin main
+          
+          # 3. Cài đặt lại thư viện và khởi động lại ứng dụng
+          npm install
+          # npm run build # Bỏ dấu # nếu dự án của bạn cần build (React/Nextjs)
+          
+          # Khởi động lại bằng PM2 (hoặc lệnh bạn dùng để chạy dự án)
+          pm2 restart all || pm2 start server.js --name "medicine-store"
